@@ -11,6 +11,7 @@ const Game = mongoose.model(
 		active: Boolean,
 		total_cash: Number,
 		created_by: String,
+		code: String,
 		players: [
 			{
 				_id: String,

@@ -15,6 +15,7 @@ router.post('/', (req, res) => {
 		active: req.body.active,
 		total_cash: req.body.total_cash,
 		created_by: req.body.player._id,
+		code: req.body.code,
 		players: [
 			req.body.player
 		]
@@ -34,6 +35,7 @@ router.post('/', (req, res) => {
 });
 router.patch('/join/:_id', (req, res) => {
 	var id = { _id: req.params._id }
+	var code = req.body.code;
 	const Player = {
 		_id: req.body._id,
 		username: req.body.username,
@@ -43,44 +45,61 @@ router.patch('/join/:_id', (req, res) => {
 		
 	};
 	gameModel.findById(id).exec((err, game) => {
-		var players = game.players;
-		var duplicatePlayer = false
-		players.forEach(player => {
-			if (player._id == Player._id) {
-				duplicatePlayer=true
-				
-			}});
-			if(duplicatePlayer){
-				return res.status(400).send({message:"player already exists"})
-			}else{
-				gameModel.findByIdAndUpdate(
-					id,
-					{ $push: { players: Player } },
-					(err) => {
-						if (err) {
-							return res.send(err);
-							
-						} else {
-							return res.send({ message: 'player added to game succesfully' });
-							
+		if(code === game.code)
+		{
+			var players = game.players;
+			var duplicatePlayer = false
+			players.forEach(player => {
+				if (player._id == Player._id) {
+					duplicatePlayer=true
+					
+				}});
+				if(duplicatePlayer){
+					return res.status(400).send({message:"player already exists"})
+				}else{
+					gameModel.findByIdAndUpdate(
+						id,
+						{ $push: { players: Player } },
+						(err) => {
+							if (err) {
+								return res.send(err);
+								
+							} else {
+								return res.send({ message: 'player added to game succesfully' });
+								
+							}
 						}
-					}
-				);
-			}
+					);
+				}
+		}else{
+			console.log("invalid code")
+			return res.status(401).send({ message: 'invalid code' });
+		}
 	}
 	);
 });
 router.patch("/close/:_id", (req, res) =>{
 	var id = { _id: req.params._id }
 
-	
+	var user_id = req.body._id;
+	var finishing_stack = req.body.finishing_stack;
+	console.log(id);
 	gameModel.findById(id).exec((err, game)=>{
+		
 		var status = game.active;
-		// console.log(game);
-		// game.players.forEach(player => {
-		// 	player.in_game=false
-		// });
+		
+			game.players.forEach(player => {
+				player.in_game = false;
+				if(player._id===user_id){
+					player.finishing_stack = finishing_stack;
+					console.log(player, game.created_by, user_id)
+				}
+			});
+			game.save();
+		
+
 		//SETTARE A IN_GAME:FALSE TUTTI I PLAYER DELLA PARTITA
+
 		gameModel.findByIdAndUpdate(id, {active: !status, end: new Date()}, (err) =>{
 			if (err) {
 				return res.send(err);
